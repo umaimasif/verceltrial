@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Project Planner</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; line-height: 1.6; }
+        textarea, input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #0070f3; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        #output { margin-top: 20px; white-space: pre-wrap; background: #f4f4f4; padding: 15px; border-radius: 4px; display: none; }
+        .task-card { border-left: 5px solid #0070f3; background: white; padding: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <h1>🚀 AI Agent Project Planner</h1>
+    <p>Enter your project details below to let the AI team plan, estimate, and allocate tasks.</p>
+
+    <input type="text" id="projName" placeholder="Project Name (e.g., E-commerce App)">
+    <input type="text" id="industry" placeholder="Industry (e.g., Software)">
+    <textarea id="requirements" rows="4" placeholder="What are the requirements?"></textarea>
+    
+    <h3>Team Members (Format: Name | Skills)</h3>
+    <textarea id="team" rows="4">Alice | Frontend, React
+Bob | Backend, Python
+Charlie | QA, Testing</textarea>
+
+    <button id="runBtn" onclick="generatePlan()">Generate Project Plan</button>
+
+    <div id="loading" style="display:none;">⏳ Agents are working... please wait (this can take 30-40 seconds)</div>
+    <div id="output"></div>
+
+    <script>
+        async function generatePlan() {
+            const btn = document.getElementById('runBtn');
+            const output = document.getElementById('output');
+            const loading = document.getElementById('loading');
+            
+            // Format team members
+            const teamLines = document.getElementById('team').value.split('\n');
+            const team_members = teamLines.map(line => {
+                const [name, skills] = line.split('|');
+                return { name: name?.trim(), skills: skills?.trim() };
+            });
+
+            const data = {
+                project_name: document.getElementById('projName').value,
+                industry: document.getElementById('industry').value,
+                requirements: document.getElementById('requirements').value,
+                team_members: team_members
+            };
+
+            btn.disabled = true;
+            loading.style.display = 'block';
+            output.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/generate-plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    let html = `<h2>Final Plan for ${result.project}</h2>`;
+                    result.plan.forEach(task => {
+                        html += `
+                            <div class="task-card">
+                                <strong>${task.task_name}</strong><br>
+                                👤 Assigned to: ${task.assigned_to} | ⏱️ Hours: ${task.estimated_hours}<br>
+                                <small><em>Rationale: ${task.rationale}</em></small>
+                            </div>`;
+                    });
+                    output.innerHTML = html;
+                } else {
+                    output.innerText = "Error: " + result.detail;
+                }
+            } catch (err) {
+                output.innerText = "Error: " + err.message;
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+                output.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

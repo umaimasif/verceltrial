@@ -1,7 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/generate-plan", "destination": "/main.py" },
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/main.py" }
   ]
 }

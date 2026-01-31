@@ -3,30 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Project Planner - Merged View</title>
+    <title>AI Project Planner - Workload Dashboard</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; line-height: 1.6; background-color: #f4f7f6; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; border-bottom: 3px solid #0070f3; padding-bottom: 10px; }
-        label { font-weight: bold; display: block; margin-top: 15px; color: #34495e; }
-        textarea, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #d1d8e0; border-radius: 6px; box-sizing: border-box; }
-        button { background: #0070f3; color: white; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 20px; }
-        button:hover { background: #0056b3; }
-        button:disabled { background: #a5b1c2; }
+        body { font-family: 'Segoe UI', sans-serif; max-width: 950px; margin: 20px auto; padding: 20px; line-height: 1.6; background-color: #f0f2f5; }
+        .container { background: white; padding: 35px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: #1a1a1a; border-left: 5px solid #0070f3; padding-left: 15px; margin-bottom: 25px; }
+        label { font-weight: 600; display: block; margin-top: 15px; color: #4b4b4b; }
+        textarea, input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #dcdde1; border-radius: 8px; box-sizing: border-box; transition: border 0.3s; }
+        textarea:focus, input:focus { border-color: #0070f3; outline: none; }
+        button { background: #0070f3; color: white; border: none; padding: 18px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,112,243,0.3); }
         
-        /* Merged Section Styling */
-        .person-block { margin-top: 35px; border: 1px solid #e1e8ed; border-radius: 8px; overflow: hidden; background: #fff; }
-        .person-header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .total-badge { background: #27ae60; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9em; }
+        /* Dashboard Styling */
+        .person-block { margin-top: 30px; border-radius: 10px; background: #fff; border: 1px solid #e1e4e8; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .person-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .name-tag { font-size: 1.2em; font-weight: bold; color: #2f3640; }
+        .total-badge { background: #2f3640; color: white; padding: 6px 14px; border-radius: 50px; font-size: 0.85em; }
         
-        .task-card { padding: 15px 20px; border-bottom: 1px solid #f1f2f6; transition: background 0.2s; }
+        /* Progress Bar */
+        .progress-container { height: 8px; background: #eee; width: 100%; }
+        .progress-bar { height: 100%; background: #0070f3; transition: width 1s ease-in-out; }
+        
+        .task-list { padding: 10px 20px; }
+        .task-card { padding: 12px 0; border-bottom: 1px solid #f5f6fa; }
         .task-card:last-child { border-bottom: none; }
-        .task-card:hover { background: #f9fbff; }
-        .task-title { color: #0070f3; font-weight: bold; display: block; margin-bottom: 5px; }
-        .task-rationale { font-size: 0.9em; color: #57606f; margin: 5px 0; }
-        .task-hours { font-size: 0.85em; font-weight: bold; color: #2f3542; background: #dfe4ea; padding: 2px 8px; border-radius: 4px; display: inline-block; }
-        
-        #loading { text-align: center; margin: 20px 0; color: #0070f3; font-weight: bold; }
+        .task-title { font-weight: 700; color: #0070f3; }
+        .task-rationale { font-size: 0.9em; color: #7f8c8d; margin: 4px 0; }
+        .task-meta { font-size: 0.8em; font-weight: bold; color: #2f3542; }
+
+        #loading { text-align: center; color: #0070f3; margin: 20px 0; font-size: 1.1em; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
@@ -34,23 +39,23 @@
         <h1>🚀 AI Agent Project Planner</h1>
         
         <label>Project Name</label>
-        <input type="text" id="projName" placeholder="e.g. E-Commerce MVP">
+        <input type="text" id="projName" value="E-Commerce Website MVP">
 
         <label>Industry</label>
-        <input type="text" id="industry" placeholder="e.g. Retail Tech">
+        <input type="text" id="industry" value="Software Development">
 
         <label>Requirements</label>
-        <textarea id="requirements" rows="3" placeholder="Core features..."></textarea>
+        <textarea id="requirements" rows="3">Full store with cart, user accounts, and Stripe payments.</textarea>
         
         <label>Team Members (Name | Skills)</label>
-        <textarea id="team" rows="4">Alice | Frontend, UI/UX
-Bob | Backend, Database, Security
-Charlie | QA, DevOps
-Diana | Planning, Docs</textarea>
+        <textarea id="team" rows="4">Alice | Frontend, CSS, UI
+Bob | Backend, Python, API
+Charlie | QA, Security
+Diana | Manager, Docs</textarea>
 
-        <button id="runBtn" onclick="generatePlan()">Generate & Merge Workloads</button>
+        <button id="runBtn" onclick="generatePlan()">Analyze & Allocate Tasks</button>
 
-        <div id="loading" style="display:none;">⏳ Calculating total workloads...</div>
+        <div id="loading" style="display:none;">🧠 AI Agents are calculating workloads...</div>
         <div id="output"></div>
     </div>
 
@@ -87,51 +92,55 @@ Diana | Planning, Docs</textarea>
                 const result = await response.json();
                 
                 if (response.ok) {
-                    let htmlContent = `<h2 style="margin-top:30px;">Summary for ${result.project}</h2>`;
-                    
-                    // 1. GROUP AND SUM LOGIC
-                    const grouped = {};
+                    let grouped = {};
+                    let grandTotal = 0;
+
+                    // 1. Group tasks and calculate the Grand Total of all project hours
                     result.plan.forEach(task => {
                         const person = task.assigned_to || 'Unassigned';
-                        if (!grouped[person]) {
-                            grouped[person] = { tasks: [], sum: 0 };
-                        }
+                        if (!grouped[person]) grouped[person] = { tasks: [], sum: 0 };
+                        
+                        const h = parseInt(task.estimated_hours) || 0;
                         grouped[person].tasks.push(task);
-                        // Convert hours to number and add to total
-                        const hours = parseInt(task.estimated_hours) || 0;
-                        grouped[person].sum += hours;
+                        grouped[person].sum += h;
+                        grandTotal += h;
                     });
 
-                    // 2. DISPLAY LOGIC
+                    let html = `<h2 style="margin-top:30px;">Project Summary: ${grandTotal} Total Hours</h2>`;
+
+                    // 2. Render each person's merged block with a workload bar
                     for (const person in grouped) {
-                        htmlContent += `
+                        const percentage = ((grouped[person].sum / grandTotal) * 100).toFixed(0);
+                        
+                        html += `
                             <div class="person-block">
                                 <div class="person-header">
-                                    <span>👤 <strong>${person}</strong></span>
-                                    <span class="total-badge">Total Workload: ${grouped[person].sum} hrs</span>
-                                </div>`;
+                                    <span class="name-tag">👤 ${person}</span>
+                                    <span class="total-badge">${grouped[person].sum} Hours (${percentage}%)</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                                </div>
+                                <div class="task-list">`;
                         
-                        grouped[person].tasks.forEach(task => {
-                            htmlContent += `
+                        grouped[person].tasks.forEach(t => {
+                            html += `
                                 <div class="task-card">
-                                    <span class="task-title">✅ ${task.task_name}</span>
-                                    <p class="task-rationale">${task.rationale}</p>
-                                    <span class="task-hours">⏱️ ${task.estimated_hours} hrs</span>
+                                    <div class="task-title">✅ ${t.task_name}</div>
+                                    <div class="task-rationale">${t.rationale}</div>
+                                    <div class="task-meta">⏱️ ${t.estimated_hours} Hours</div>
                                 </div>`;
                         });
                         
-                        htmlContent += `</div>`;
+                        html += `</div></div>`;
                     }
-                    output.innerHTML = htmlContent;
-                } else {
-                    output.innerHTML = `<p style="color:red;">Error: ${result.detail}</p>`;
+                    output.innerHTML = html;
                 }
             } catch (err) {
-                output.innerHTML = `<p style="color:red;">Network Error: ${err.message}</p>`;
+                output.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
             } finally {
                 btn.disabled = false;
                 loading.style.display = 'none';
-                output.style.display = 'block';
             }
         }
     </script>

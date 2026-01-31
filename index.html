@@ -3,51 +3,273 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Project Planner - Dashboard</title>
+    <title>AI Project Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; max-width: 950px; margin: 20px auto; padding: 20px; background-color: #f4f6f8; }
-        .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h1 { color: #2c3e50; border-bottom: 4px solid #0070f3; padding-bottom: 15px; margin-bottom: 30px; }
-        label { font-weight: 700; display: block; margin-top: 20px; color: #34495e; }
-        textarea, input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #dfe6e9; border-radius: 8px; font-size: 14px; }
-        button { background: #0070f3; color: white; border: none; padding: 18px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; margin-top: 30px; transition: background 0.3s; }
-        button:hover { background: #0056b3; }
-        button:disabled { background: #b2bec3; cursor: not-allowed; }
+        :root {
+            --primary: #4F46E5; /* Indigo */
+            --primary-hover: #4338ca;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --danger: #EF4444;
+            --success: #10B981;
+        }
 
-        /* Dashboard Items */
-        .person-block { margin-top: 30px; background: white; border: 1px solid #e1e8ed; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .person-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; color: white; }
-        .total-badge { background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 20px; font-size: 0.9em; font-weight: bold; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 900px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 10px;
+            background: -webkit-linear-gradient(45deg, #4F46E5, #9333EA);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        /* Form Styling */
+        .input-group {
+            margin-bottom: 20px;
+        }
         
-        .progress-bg { height: 10px; background: #ecf0f1; width: 100%; }
-        .progress-fill { height: 100%; background: #00b894; transition: width 1s; }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+            font-size: 0.95rem;
+        }
 
-        .task-card { padding: 15px 20px; border-bottom: 1px solid #f1f2f6; }
-        .task-card:last-child { border-bottom: none; }
-        .task-name { color: #2d3436; font-weight: bold; font-size: 1.05em; }
-        .task-desc { color: #636e72; font-size: 0.9em; margin: 5px 0; }
-        .task-meta { font-size: 0.85em; font-weight: bold; color: #0984e3; margin-top: 5px; }
+        input, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
 
-        #loading { text-align: center; color: #0070f3; font-weight: bold; margin-top: 20px; display: none; }
+        input:focus, textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Dashboard Results */
+        #output {
+            margin-top: 40px;
+            border-top: 2px dashed #e5e7eb;
+            padding-top: 40px;
+        }
+
+        .person-block {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .person-block:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .person-header {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .person-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .overload-tag {
+            background: rgba(0,0,0,0.3);
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-track {
+            background: #f3f4f6;
+            height: 12px;
+            width: 100%;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 1s ease-in-out;
+        }
+
+        .task-list {
+            padding: 10px 0;
+        }
+
+        .task-card {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .task-card:last-child {
+            border-bottom: none;
+        }
+
+        .task-main {
+            flex: 1;
+            padding-right: 20px;
+        }
+
+        .task-title {
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .task-rationale {
+            font-size: 0.9rem;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .task-badge {
+            background: #EEF2FF;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        #loading {
+            text-align: center;
+            margin-top: 30px;
+            font-weight: 600;
+            color: var(--primary);
+            display: none;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(79,70,229,0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 AI Workload Manager</h1>
-        
-        <label>Project Name</label>
-        <input type="text" id="projName" value="E-Commerce Website MVP">
+        <h1>Project Planner Agent</h1>
+        <p class="subtitle">Orchestrate your team with intelligent, skill-based task allocation.</p>
 
-        <label>Requirements</label>
-        <textarea id="requirements" rows="2">Full online store with user login, product search, cart, and stripe payments.</textarea>
-        
-        <label>Team Members (Name | Skills)</label>
-        <textarea id="team" rows="4">Alice | Frontend, React, UI/UX
-Bob | Backend, Python, Database
-Charlie | QA, Security, DevOps</textarea>
+        <div class="input-group">
+            <label>Project Name</label>
+            <input type="text" id="projName" value="E-Commerce MVP">
+        </div>
 
-        <button id="runBtn" onclick="generatePlan()">Generate Workload Plan</button>
-        <div id="loading">🧠 AI Agents are allocating tasks...</div>
+        <div class="input-group">
+            <label>Core Requirements</label>
+            <textarea id="requirements" rows="3">User login, product catalog, shopping cart, checkout via Stripe.</textarea>
+        </div>
+        
+        <div class="input-group">
+            <label>Team Roster (Name | Skills)</label>
+            <textarea id="team" rows="4">Alice | Frontend, React, Tailwind
+Bob | Backend, Python, API
+Charlie | QA, Security, Testing</textarea>
+        </div>
+
+        <button id="runBtn" onclick="generatePlan()">
+            Generate Optimized Plan 🚀
+        </button>
+
+        <div id="loading">
+            <div class="spinner"></div> Agents are strategizing...
+        </div>
+        
         <div id="output"></div>
     </div>
 
@@ -71,6 +293,7 @@ Charlie | QA, Security, DevOps</textarea>
             };
 
             btn.disabled = true;
+            btn.innerHTML = "Processing...";
             loading.style.display = 'block';
             output.innerHTML = '';
 
@@ -84,49 +307,56 @@ Charlie | QA, Security, DevOps</textarea>
                 const result = await response.json();
                 
                 if (response.ok) {
-                    // 1. Calculate Grand Total
                     let grouped = {};
                     let grandTotal = 0;
                     
+                    // Logic: Group tasks & Sum hours
                     result.plan.forEach(task => {
                         const person = task.assigned_to || 'Unassigned';
                         if (!grouped[person]) grouped[person] = { tasks: [], sum: 0 };
-                        
                         const h = parseInt(task.estimated_hours) || 0;
                         grouped[person].tasks.push(task);
                         grouped[person].sum += h;
                         grandTotal += h;
                     });
 
-                    // 2. Render Output
-                    let html = `<h2 style="margin-top:30px; text-align:center;">Total Project Hours: ${grandTotal}</h2>`;
+                    // Render Header
+                    let html = `<h2 style="text-align:center; color:#374151; margin-bottom:30px;">
+                        Total Project Estimate: <span style="color:#4F46E5">${grandTotal} Hours</span>
+                    </h2>`;
 
+                    // Render Each Person
                     for (const person in grouped) {
                         const hours = grouped[person].sum;
                         const percent = grandTotal > 0 ? ((hours / grandTotal) * 100).toFixed(0) : 0;
-                        
-                        // OVERLOAD LOGIC: Red if > 40 hours
                         const isOverloaded = hours > 40;
-                        const headerColor = isOverloaded ? "#e17055" : "#2d3436"; 
-                        const alertText = isOverloaded ? "⚠️ OVERLOADED" : "";
+                        
+                        // Dynamic Colors
+                        const headerColor = isOverloaded ? "#EF4444" : "#4F46E5"; 
+                        const barColor = isOverloaded ? "#EF4444" : "#10B981";
 
                         html += `
                             <div class="person-block">
                                 <div class="person-header" style="background: ${headerColor};">
-                                    <span>👤 <strong>${person}</strong> ${alertText}</span>
-                                    <span class="total-badge">${hours} hrs (${percent}%)</span>
+                                    <div class="person-info">
+                                        👤 ${person}
+                                        ${isOverloaded ? '<span class="overload-tag">⚠️ Overloaded</span>' : ''}
+                                    </div>
+                                    <div style="font-weight:600;">${hours} hrs (${percent}%)</div>
                                 </div>
-                                <div class="progress-bg">
-                                    <div class="progress-fill" style="width: ${percent}%; background: ${isOverloaded ? '#d63031' : '#00b894'};"></div>
+                                <div class="progress-track">
+                                    <div class="progress-fill" style="width: ${percent}%; background: ${barColor};"></div>
                                 </div>
-                                <div>`;
+                                <div class="task-list">`;
                         
                         grouped[person].tasks.forEach(t => {
                             html += `
                                 <div class="task-card">
-                                    <div class="task-name">✅ ${t.task_name}</div>
-                                    <div class="task-desc">${t.rationale}</div>
-                                    <div class="task-meta">⏱️ ${t.estimated_hours} Hours</div>
+                                    <div class="task-main">
+                                        <span class="task-title">${t.task_name}</span>
+                                        <div class="task-rationale">${t.rationale}</div>
+                                    </div>
+                                    <span class="task-badge">⏱️ ${t.estimated_hours}h</span>
                                 </div>`;
                         });
                         
@@ -134,12 +364,13 @@ Charlie | QA, Security, DevOps</textarea>
                     }
                     output.innerHTML = html;
                 } else {
-                    output.innerHTML = `<p style="color:red; text-align:center;">Error: ${result.detail}</p>`;
+                    output.innerHTML = `<div style="color:red; text-align:center; padding:20px; background:#fee2e2; border-radius:12px;">Error: ${result.detail}</div>`;
                 }
             } catch (err) {
-                output.innerHTML = `<p style="color:red; text-align:center;">Connection Error: ${err.message}</p>`;
+                output.innerHTML = `<div style="color:red; text-align:center;">Network Error: ${err.message}</div>`;
             } finally {
                 btn.disabled = false;
+                btn.innerHTML = "Generate Optimized Plan 🚀";
                 loading.style.display = 'none';
             }
         }

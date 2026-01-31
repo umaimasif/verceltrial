@@ -12,7 +12,6 @@ from langgraph.graph import StateGraph, END
 app = FastAPI()
 
 # --- 1. SETUP & CONFIGURATION ---
-# The GROQ_API_KEY must be set in your Vercel Environment Variables
 llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
 
 # --- 2. DATA MODELS ---
@@ -27,71 +26,79 @@ class ProjectState(BaseModel):
     requirements: str
     industry: str
     team_members: List[Dict[str, str]]
-    tasks: List[str] = []
-    estimated_tasks: List[Dict] = []
     final_plan: List[Dict] = []
 
-class TaskList(BaseModel):
-    tasks: List[str] = Field(description="A list of distinct project tasks")
+# --- 3. THE UNIFIED FAST NODE ---
 
-class TaskEstimation(BaseModel):
-    task_name: str
-    estimated_hours: int
-    rationale: str
-
-class EstimationList(BaseModel):
-    estimations: List[TaskEstimation]
-
-# --- 3. NODE DEFINITIONS ---
-
-def planner_node(state: Any):
+def fast_agent_node(state: Any):
+    # Ensure state is handled as a dict
     s = state if isinstance(state, dict) else state.dict()
-    parser = JsonOutputParser(pydantic_object=TaskList)
-    prompt = ChatPromptTemplate.from_template(
-        "You are a Project Planner. Project: {project_name}. Industry: {industry}. "
-        "Requirements: {requirements}. Break this into a list of tasks. {format_instructions}"
-    )
-    chain = prompt | llm | parser
-    result = chain.invoke({
-        "industry": s.get("industry"),
-        "project_name": s.get("project_name"),
-        "requirements": s.get("requirements"),
-        "format_instructions": parser.get_format_instructions()
-    })
-    return {"tasks": result["tasks"]}
-
-def estimator_node(state: Any):
-    s = state if isinstance(state, dict) else state.dict()
-    parser = JsonOutputParser(pydantic_object=EstimationList)
-    tasks_str = "\n".join(s.get("tasks", []))
-    prompt = ChatPromptTemplate.from_template(
-        "Estimate realistic hours for these tasks: {tasks_str}. {format_instructions}"
-    )
-    chain = prompt | llm | parser
-    result = chain.invoke({"tasks_str": tasks_str, "format_instructions": parser.get_format_instructions()})
-    return {"estimated_tasks": result["estimations"]}
-
-def allocator_node(state: Any):
-    s = state if isinstance(state, dict) else state.dict()
-    team_str = str(s.get("team_members", []))
-    tasks_data = str(s.get("estimated_tasks", []))
     
-    # --- STRICT JSON PROMPT ---
+    print(f"--- UNIFIED AGENT: Planning project {s.get('project_name')} ---")
+    
+    # We combine all steps into one prompt to save time
     prompt = ChatPromptTemplate.from_template(
-        "You are a Resource Allocator. Assign these tasks: {tasks_data} to this team: {team_str}. "
-        "Match tasks to skills. "
-        "CRITICAL: Output ONLY a valid JSON list of objects. No intro text, no python code, no markdown backticks. "
-        "Format: [{{'task_name': '...', 'assigned_to': '...', 'estimated_hours': 0, 'rationale': '...'}}]"
+        """
+        You are a Master Project Manager. 
+        Project: {project_name} ({industry})
+        Requirements: {requirements}
+        Team: {team_str}
+
+        TASK:
+        1. Create 5-7 key tasks to build this project.
+        2. Estimate realistic hours for each task.
+        3. Assign each task to the best team member based on their skills.
+        
+        CRITICAL: Your response must be ONLY a raw JSON list. 
+        No intro, no code blocks, no backticks.
+        Format: [
+          {{"task_name": "...", "assigned_to": "...", "estimated_hours": 0, "rationale": "..."}}
+        ]
+        """
     )
     
-    # We use a standard JsonOutputParser to enforce structure
     chain = prompt | llm | JsonOutputParser()
     
     try:
-        result = chain.invoke({"team_str": team_str, "tasks_data": tasks_data})
-        # Handle cases where AI returns a dict with a 'plan' key instead of a raw list
-        plan = result if isinstance(result, list) else result.get("allocations", result.get("plan", []))
+        result = chain.invoke({
+            "project_name": s.get("project_name"),
+            "industry": s.get("industry"),
+            "requirements": s.get("requirements"),
+            "team_str": str(s.get("team_members", []))
+        })
+        
+        # Extract list regardless of AI wrapper
+        plan = result if isinstance(result, list) else result.get("plan", result.get("allocations", []))
         return {"final_plan": plan}
     except Exception as e:
-        print(f"Allocation Error: {e}")
-        raise
+        print(f"Fast Agent Error: {e}")
+        raise e
+
+# --- 4. GRAPH CONSTRUCTION (SIMPLIFIED) ---
+workflow = StateGraph(ProjectState)
+workflow.add_node("agent", fast_agent_node)
+workflow.set_entry_point("agent")
+workflow.add_edge("agent", END)
+
+runner = workflow.compile()
+
+# --- 5. ROUTES ---
+
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    try:
+        # Serves the index.html from the root directory
+        with open("index.html", "r") as f:
+            return f.read()
+    except Exception as e:
+        return f"<h1>Error: index.html not found</h1><p>{str(e)}</p>"
+
+@app.post("/api/generate-plan")
+async def generate_plan(request: ProjectRequest):
+    try:
+        initial_state = request.model_dump()
+        result = runner.invoke(initial_state)
+        
+        return {
+            "project": result.get("project_name") if isinstance(result, dict) else result.project_name,
+            "plan": result

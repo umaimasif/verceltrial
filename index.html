@@ -1,12 +1,64 @@
-async function generatePlan() {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Project Planner</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; line-height: 1.6; background-color: #f9f9f9; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #0070f3; padding-bottom: 10px; }
+        label { font-weight: bold; display: block; margin-top: 15px; }
+        textarea, input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        button { background: #0070f3; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #output { margin-top: 30px; display: none; }
+        .person-section { margin-top: 40px; }
+        .person-header { background: #0070f3; color: white; padding: 10px 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .task-card { border-left: 5px solid #0070f3; background: #fff; padding: 15px; margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #eee; border-left-width: 5px; }
+        .task-meta { font-size: 0.85em; color: #666; margin-top: 8px; border-top: 1px api #eee; padding-top: 8px; }
+        #loading { margin-top: 20px; font-weight: bold; color: #0070f3; }
+        .total-hours { font-weight: normal; font-size: 0.9em; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 AI Agent Project Planner</h1>
+        <p>Enter your project details to generate a structured work plan grouped by team member.</p>
+
+        <label for="projName">Project Name</label>
+        <input type="text" id="projName" placeholder="e.g. E-Commerce Website MVP">
+
+        <label for="industry">Industry</label>
+        <input type="text" id="industry" placeholder="e.g. Software Development">
+
+        <label for="requirements">Project Requirements</label>
+        <textarea id="requirements" rows="4" placeholder="Describe the core features and goals..."></textarea>
+        
+        <label for="team">Team Members (Format: Name | Skills)</label>
+        <textarea id="team" rows="5">Alice | Frontend, UI/UX, CSS, React
+Bob | Backend, Python, Database, Stripe API
+Charlie | DevOps, QA, Testing, Security
+Diana | Project Management, Requirements, Documentation</textarea>
+
+        <button id="runBtn" onclick="generatePlan()">Generate Merged Plan</button>
+
+        <div id="loading" style="display:none;">⏳ AI Agents are coordinating... (This may take up to 40 seconds)</div>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        async function generatePlan() {
             const btn = document.getElementById('runBtn');
             const output = document.getElementById('output');
             const loading = document.getElementById('loading');
             
-            const teamLines = document.getElementById('team').value.split('\n');
+            // Format team members into a list of objects
+            const teamLines = document.getElementById('team').value.trim().split('\n');
             const team_members = teamLines.map(line => {
                 const [name, skills] = line.split('|');
-                return { name: name?.trim(), skills: skills?.trim() };
+                return { name: name?.trim() || 'Unassigned', skills: skills?.trim() || 'General' };
             });
 
             const data = {
@@ -16,9 +68,11 @@ async function generatePlan() {
                 team_members: team_members
             };
 
+            // UI State management
             btn.disabled = true;
             loading.style.display = 'block';
             output.style.display = 'none';
+            output.innerHTML = '';
 
             try {
                 const response = await fetch('/api/generate-plan', {
@@ -30,43 +84,53 @@ async function generatePlan() {
                 const result = await response.json();
                 
                 if (response.ok) {
-                    let html = `<h2>Final Project Plan: ${result.project}</h2>`;
+                    let htmlContent = `<h2>Merged Project Plan: ${result.project}</h2>`;
                     
-                    // --- MERGING LOGIC: Group tasks by assigned person ---
-                    const groupedTasks = {};
+                    // --- GROUPING LOGIC ---
+                    const grouped = {};
                     result.plan.forEach(task => {
-                        const person = task.assigned_to;
-                        if (!groupedTasks[person]) {
-                            groupedTasks[person] = [];
+                        const person = task.assigned_to || 'Unassigned';
+                        if (!grouped[person]) {
+                            grouped[person] = { tasks: [], totalHours: 0 };
                         }
-                        groupedTasks[person].push(task);
+                        grouped[person].tasks.push(task);
+                        grouped[person].totalHours += parseInt(task.estimated_hours) || 0;
                     });
 
-                    // --- GENERATING THE HTML SECTIONS ---
-                    for (const person in groupedTasks) {
-                        html += `
-                            <div style="margin-top: 30px; border-bottom: 2px solid #0070f3; padding-bottom: 5px;">
-                                <h3 style="color: #0070f3;">👤 Tasks for ${person}</h3>
-                            </div>`;
+                    // --- RENDERING SECTIONS ---
+                    for (const person in grouped) {
+                        htmlContent += `
+                            <div class="person-section">
+                                <div class="person-header">
+                                    <span>👤 Tasks for <strong>${person}</strong></span>
+                                    <span class="total-hours">Total: ${grouped[person].totalHours} hrs</span>
+                                </div>`;
                         
-                        groupedTasks[person].forEach(task => {
-                            html += `
+                        grouped[person].tasks.forEach(task => {
+                            htmlContent += `
                                 <div class="task-card">
-                                    <strong>✅ ${task.task_name}</strong><br>
-                                    ⏱️ <strong>Hours:</strong> ${task.estimated_hours}<br>
-                                    <p style="font-size: 0.9em; color: #555;"><em>${task.rationale}</em></p>
+                                    <strong>✅ ${task.task_name}</strong>
+                                    <p>${task.rationale}</p>
+                                    <div class="task-meta">
+                                        ⏱️ <strong>Estimated Effort:</strong> ${task.estimated_hours} hours
+                                    </div>
                                 </div>`;
                         });
+                        
+                        htmlContent += `</div>`;
                     }
-                    output.innerHTML = html;
+                    output.innerHTML = htmlContent;
                 } else {
-                    output.innerText = "Error: " + (result.detail || "Check Vercel Logs");
+                    output.innerHTML = `<p style="color:red;">Error: ${result.detail || 'The AI agents encountered a timeout. Please try a simpler request.'}</p>`;
                 }
             } catch (err) {
-                output.innerText = "Error: " + err.message;
+                output.innerHTML = `<p style="color:red;">Network Error: ${err.message}</p>`;
             } finally {
                 btn.disabled = false;
                 loading.style.display = 'none';
                 output.style.display = 'block';
             }
         }
+    </script>
+</body>
+</html>
